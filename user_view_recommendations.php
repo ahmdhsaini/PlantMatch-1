@@ -101,6 +101,13 @@ if (!function_exists('map_water_label')) {
 if (!function_exists('map_input_to_val')) {
     function map_input_to_val($str) {
         $str = strtolower($str);
+        // Answers that need an exact value, checked before the keyword lists below.
+        // Matches how the plant table is encoded: Monthly 0.0 / Weekly 0.5 / Daily 1.0,
+        // Low Light 0.0 / Partial 0.5 / Full Sun 1.0.
+        if (strpos($str, 'partial') !== false) return 0.5;
+        if (strpos($str, 'daily') !== false) return 1.0;
+        if (strpos($str, 'weekly') !== false) return 0.5;
+        if (strpos($str, 'monthly') !== false) return 0.0;
         if (strpos($str, 'low') !== false || strpos($str, 'slow') !== false || strpos($str, 'shade') !== false || strpos($str, 'beginner') !== false || strpos($str, 'small') !== false || strpos($str, 'limited') !== false || strpos($str, 'compact') !== false || strpos($str, 'infrequent') !== false || strpos($str, 'dry') !== false) {
             return 0.0;
         }
