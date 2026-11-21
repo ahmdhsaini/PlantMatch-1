@@ -1,0 +1,9 @@
+pdfplumber
+pandas
+numpy
+scikit-learn
+scipy
+sqlalchemy
+mysql-connector-python
+matplotlib
+openpyxl

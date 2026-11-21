@@ -8,8 +8,16 @@ session_start();
 //     exit();
 // }
 
-// Your live Groq API Key
-define('GROK_API_KEY', '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'); 
+// Groq API key: kept in config.php (git-ignored), never in the code.
+// Copy config.example.php to config.php and put your own key there.
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
+if (!defined('GROK_API_KEY') || GROK_API_KEY === '') {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Chatbot is not set up: add GROK_API_KEY to config.php']);
+    exit();
+}
 
 header('Content-Type: application/json');
 

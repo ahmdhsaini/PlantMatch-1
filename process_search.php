@@ -34,7 +34,7 @@ if (isset($_GET['search'])) {
  */
 if (!empty($search_query)) {
     // Redirect with the search term
-    header("Location: search.php?keyword=" . urlencode($search_query));
+    header("Location: search.php?search=" . urlencode($search_query));
 } else {
     // If search is empty, just go back to the main search page
     header("Location: search.php");

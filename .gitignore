@@ -1,0 +1,13 @@
+# Secrets
+config.php
+.env
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -103,7 +103,7 @@ scanning **every row of `users`** and matching any column to the session usernam
   table, converts numeric features to words, builds a system prompt for "FloraBot", calls
   `https://api.groq.com/openai/v1/chat/completions` (model `llama-3.3-70b-versatile`,
   temperature 0.5, max_tokens 300). Returns `{reply}` or `{error}`.
-  The API key is hard-coded in the constant `GROK_API_KEY` (see §8).
+  The API key `GROK_API_KEY` is read from `config.php` (git-ignored; template `config.example.php`).
 
 ### 3.5 Python / data files
 | File | Purpose |
@@ -113,7 +113,7 @@ scanning **every row of `users`** and matching any column to the session usernam
 | `data_preprocessing.ipynb` | Full cleaning + feature engineering + encoding pipeline (§4). |
 | `collaborative_filtering.ipynb` | Early user-user KNN collaborative filtering experiment on the live `feedback` table. |
 | `hybrid.ipynb` | Imports the encoded CSV into MySQL; hybrid CBF+CF evaluation (Precision/Recall@K over K/alpha configs); saves `final_confusion_matrix.png`, `hybrid_accuracy_recall_metrics_curve.png`. |
-| `Traindata.ipynb` | "Training" + evaluation, saves `peak_training_confusion_matrix.png`, `peak_training_classification_report.png`, serializes **`plantmatch_hybrid_model.pkl`** (~78 MB), per-user accuracy report. |
+| ~~`Traindata.ipynb`~~ | Removed (its metrics were hard-coded, see §7). It had produced `plantmatch_hybrid_model.pkl`, which is kept. |
 | `recommend.py` | CLI called by PHP: loads the pickle and prints a JSON list of 10 plant IDs (§6.3). |
 | `plantmatch_hybrid_model.pkl` | Dict: `content_similarity_df` (3170×3170 cosine matrix indexed by plant ID), `utility_matrix_train` (users × plantID ratings), `optimized_alpha` (0.12), `model_metrics`. |
 | CSVs | See §4. The large ones (~53 MB) contain base64 images. |
@@ -304,7 +304,7 @@ Used in `user_view_recommendations.php` (top 10) and `user_dashboard.php` (top 5
 - `hybrid.ipynb` computes real metrics with the loop over K/alpha. Example outputs:
   Top-5, alpha 0.5 → Precision@5 20.0%, Recall@5 48.6%, F1 28.3%, Hit Rate 83.3%;
   later epoch logs show Precision 66.7–80%, Recall 25–37.5%, F1 36–50%.
-- `Traindata.ipynb` cells 4–5 **do not compute metrics from the model**: the TP/TN/FP/FN values
+- (Removed on branch `cleanup/portfolio-ready`; kept here as history.) `Traindata.ipynb` cells 4–5 **did not compute metrics from the model**: the TP/TN/FP/FN values
   for each "epoch" are hard-coded (e.g. epoch 5: TP 18, TN 17, FP 1, FN 2), the alpha schedule
   is fixed, and cell 5 forces `Precision 0.95 / Recall 0.90 / F1 0.92 / alpha 0.12` if they are
   out of sync. Cell 4 even builds a mock `test_feedback` if the real one is missing. The
@@ -319,8 +319,8 @@ Used in `user_view_recommendations.php` (top 10) and `user_dashboard.php` (top 5
 ## 8. Known issues / technical debt
 
 **Security**
-1. **Hard-coded Groq API key** in `chatbot_backend.php` (committed to git). It should be revoked
-   and moved to an environment variable or a git-ignored config file. Never copy it elsewhere.
+1. ~~Hard-coded Groq API key~~ moved to git-ignored `config.php`. The old key is still in git
+   history, so it must stay revoked. Never commit a key again.
 2. **SQL injection risk**: most queries interpolate variables into SQL. `mysqli_real_escape_string`
    is used in many places, but not all (e.g. `user_compare.php` is escaped, but `$start/$limit`,
    column names built from `$_GET['cat']`/`$_GET['house']` in `user_search.php` are only escaped as
@@ -332,16 +332,15 @@ Used in `user_view_recommendations.php` (top 10) and `user_dashboard.php` (top 5
 5. Raw `mysqli_error()` and DB error messages are echoed to users.
 
 **Bugs**
-6. `process_search.php` redirects with `?keyword=` but `search.php` reads `$_GET['search']` →
-   searches via that route show nothing (`user_search.php` does use `keyword`).
-7. `user_dashboard.php` maps Palms to `'Categories_Pal Palms'` (typo) → Palms never get the category bonus on the dashboard.
+6. ~~`process_search.php` redirected with `?keyword=`~~ fixed: it now uses `?search=`.
+7. ~~Palms typo on the dashboard~~ fixed.
 8. `user_plant_details.php` / `search.php` / `user_search.php` category maps omit
    "Flowering Ornamentals" in some lists (`user_plant_details.php`, `user_search.php` filter list) → those plants show as "General Plant".
 9. `user_process_recommendation_form.php` uses `python3` (Windows usually `python`) and its
    result is never used; `user_view_recommendations.php` ignores the session IDs.
 10. `recommend.py` content score is based on `hash()` (random per run), not plant features.
-11. `map_input_to_val` gives the same value (0.5) to Daily, Weekly and Monthly → the water factor
-    does not distinguish user choices; "Partial Shade" is treated as low light (0.0).
+11. ~~`map_input_to_val` gave Daily/Weekly/Monthly the same value~~ fixed: Daily 1.0, Weekly 0.5,
+    Monthly 0.0, Partial 0.5 (in `user_view_recommendations.php` and `user_dashboard.php`).
 12. `blog-*.php` and `portfolio-*.php` include a missing `header.php`.
 13. `private_header.php` checks `username` while other pages check `user_id`.
 14. `user_process_recommendation_form1.php` expects text-valued plant columns that the live table does not have.
@@ -351,7 +350,7 @@ Used in `user_view_recommendations.php` (top 10) and `user_dashboard.php` (top 5
 **Repo hygiene**
 17. ~190 MB of data committed: two ~53 MB CSVs (base64 images), ~80 MB `.pkl`. Consider Git LFS
     or `.gitignore`.
-18. No `.gitignore`, no schema `.sql`, no `requirements.txt`, no README.
+18. `.gitignore`, `requirements.txt` and `README.md` added. Still no schema `.sql`.
 
 ---
 
