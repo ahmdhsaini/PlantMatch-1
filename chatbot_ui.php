@@ -1,4 +1,20 @@
+<?php
+$_floraPlantMap = [];
+if (isset($conn)) {
+    $_floraRes = mysqli_query($conn, "SELECT ID, Common_Name FROM plantmatch_ultimate_complete LIMIT 600");
+    if ($_floraRes) {
+        while ($_floraRow = mysqli_fetch_assoc($_floraRes)) {
+            foreach (explode(',', $_floraRow['Common_Name'] ?? '') as $_n) {
+                $_n = trim($_n);
+                if ($_n !== '') $_floraPlantMap[$_n] = $_floraRow['ID'];
+            }
+        }
+    }
+}
+?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 
 <style>
     /* Fixed Launcher Bubble - Using your botanical green colour */
@@ -85,6 +101,33 @@
         border-bottom-left-radius: 2px;
         border: 1px solid #e2e8f0;
     }
+    .msg-bot h1, .msg-bot h2, .msg-bot h3 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 8px 0 4px;
+        color: #198754;
+    }
+    .msg-bot p { margin: 0 0 6px; }
+    .msg-bot ul, .msg-bot ol { margin: 4px 0 6px; padding-left: 18px; }
+    .msg-bot li { margin-bottom: 2px; }
+    .msg-bot table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.8rem;
+        margin: 6px 0;
+    }
+    .msg-bot th {
+        background-color: #198754;
+        color: #fff;
+        padding: 5px 8px;
+        text-align: left;
+    }
+    .msg-bot td {
+        padding: 4px 8px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .msg-bot tr:nth-child(even) td { background-color: #f0faf4; }
+    .msg-bot strong { color: #155724; }
 
     /* Bottom input utility bar using Bootstrap Flex utilities */
     .florabot-footer {
@@ -128,7 +171,10 @@
         <div class="d-flex align-items-center gap-2">
             <i class="bi bi-robot"></i> FloraBot Assistant
         </div>
-        <span style="cursor:pointer; font-size:1.2rem;" onclick="toggleFloraBot()">&times;</span>
+        <div class="d-flex align-items-center gap-2">
+            <span onclick="clearFloraBotHistory()" title="Clear chat" style="cursor:pointer;font-size:0.75rem;opacity:0.8;border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:1px 6px;">Clear</span>
+            <span style="cursor:pointer; font-size:1.2rem;" onclick="toggleFloraBot()">&times;</span>
+        </div>
     </div>
     
     <div class="florabot-body" id="florabot-chat-logs">
@@ -148,9 +194,89 @@
 </div>
 
 <script>
+const FLORA_PLANT_MAP = <?php echo json_encode($_floraPlantMap); ?>;
+const FLORA_STORAGE_KEY = 'florabot_history_<?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 'guest'; ?>';
+
+function findPlantId(name) {
+    const lower = name.toLowerCase().trim();
+    // 1. Exact match
+    for (const [k, v] of Object.entries(FLORA_PLANT_MAP)) {
+        if (k.toLowerCase() === lower) return v;
+    }
+    // 2. DB key contained in bold text (e.g. bold="Rose (Rosa sp.)" key="Rose")
+    for (const [k, v] of Object.entries(FLORA_PLANT_MAP)) {
+        if (lower.includes(k.toLowerCase())) return v;
+    }
+    // 3. Bold text contained in DB key (e.g. bold="Sunflower" key="Common Sunflower")
+    for (const [k, v] of Object.entries(FLORA_PLANT_MAP)) {
+        if (k.toLowerCase().includes(lower) && lower.length > 3) return v;
+    }
+    return null;
+}
+
+function renderBotBubble(markdown) {
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble msg-bot';
+    bubble.innerHTML = DOMPurify.sanitize(marked.parse(markdown));
+    bubble.querySelectorAll('strong').forEach(el => {
+        const id = findPlantId(el.textContent.trim());
+        if (id) {
+            const a = document.createElement('a');
+            a.href = 'user_plant_details.php?id=' + encodeURIComponent(id);
+            a.style.cssText = 'color:#198754;text-decoration:none;font-weight:bold;cursor:pointer;';
+            a.title = 'View plant details';
+            a.innerHTML = el.innerHTML;
+            el.replaceWith(a);
+        }
+    });
+    return bubble;
+}
+
+function saveChatHistory() {
+    try {
+        const logs = document.getElementById('florabot-chat-logs');
+        const msgs = [];
+        logs.querySelectorAll('.msg-bubble[data-role]').forEach(el => {
+            msgs.push({ role: el.dataset.role, text: el.dataset.text });
+        });
+        localStorage.setItem(FLORA_STORAGE_KEY, JSON.stringify(msgs));
+    } catch(e) {}
+}
+
+function restoreChatHistory() {
+    try {
+        const stored = localStorage.getItem(FLORA_STORAGE_KEY);
+        if (!stored) return;
+        const msgs = JSON.parse(stored);
+        const logs = document.getElementById('florabot-chat-logs');
+        msgs.forEach(m => {
+            if (m.role === 'user') {
+                const b = document.createElement('div');
+                b.className = 'msg-bubble msg-user';
+                b.dataset.role = 'user';
+                b.dataset.text = m.text;
+                b.textContent = m.text;
+                logs.appendChild(b);
+            } else {
+                const b = renderBotBubble(m.text);
+                b.dataset.role = 'bot';
+                b.dataset.text = m.text;
+                logs.appendChild(b);
+            }
+        });
+        logs.scrollTop = logs.scrollHeight;
+    } catch(e) {}
+}
+
+function clearFloraBotHistory() {
+    try { localStorage.removeItem(FLORA_STORAGE_KEY); } catch(e) {}
+    const logs = document.getElementById('florabot-chat-logs');
+    logs.querySelectorAll('.msg-bubble[data-role]').forEach(el => el.remove());
+}
+
 function toggleFloraBot() {
     const win = document.getElementById('florabot-window');
-    if(win.style.display === 'none' || win.style.display === '') {
+    if (win.style.display === 'none' || win.style.display === '') {
         win.style.display = 'flex';
         const logs = document.getElementById('florabot-chat-logs');
         logs.scrollTop = logs.scrollHeight;
@@ -160,9 +286,7 @@ function toggleFloraBot() {
 }
 
 function handleBotKeyPress(event) {
-    if (event.key === 'Enter') {
-        sendFloraBotMessage();
-    }
+    if (event.key === 'Enter') sendFloraBotMessage();
 }
 
 function sendFloraBotMessage() {
@@ -170,60 +294,58 @@ function sendFloraBotMessage() {
     const msgText = inputField.value.trim();
     if (!msgText) return;
 
-    const logsContainer = document.getElementById('florabot-chat-logs');
+    const logs = document.getElementById('florabot-chat-logs');
 
-    // Append User Message Bubble
     const userBubble = document.createElement('div');
     userBubble.className = 'msg-bubble msg-user';
+    userBubble.dataset.role = 'user';
+    userBubble.dataset.text = msgText;
     userBubble.textContent = msgText;
-    logsContainer.appendChild(userBubble);
-    
-    inputField.value = '';
-    logsContainer.scrollTop = logsContainer.scrollHeight;
+    logs.appendChild(userBubble);
 
-    // Append Loading Indicator Bubble
+    inputField.value = '';
+    logs.scrollTop = logs.scrollHeight;
+
     const loadingBubble = document.createElement('div');
     loadingBubble.className = 'msg-bubble msg-bot';
     loadingBubble.id = 'florabot-loading-indicator';
-    loadingBubble.innerHTML = '<span style="font-style:italic; color:#718096;">FloraBot is typing...</span>';
-    logsContainer.appendChild(loadingBubble);
-    logsContainer.scrollTop = logsContainer.scrollHeight;
+    loadingBubble.innerHTML = '<span style="font-style:italic;color:#718096;">FloraBot is typing...</span>';
+    logs.appendChild(loadingBubble);
+    logs.scrollTop = logs.scrollHeight;
 
-    // Fetch call to background script
     fetch('chatbot_backend.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msgText })
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
-        const loader = document.getElementById('florabot-loading-indicator');
-        if(loader) loader.remove();
-
-        const botBubble = document.createElement('div');
-        botBubble.className = 'msg-bubble msg-bot';
+        document.getElementById('florabot-loading-indicator')?.remove();
 
         if (data.reply) {
-            botBubble.textContent = data.reply;
-        } else if (data.error) {
-            botBubble.innerHTML = `<span style="color:#dc3545; font-weight:bold;">Error: ${data.error}</span>`;
+            const botBubble = renderBotBubble(data.reply);
+            botBubble.dataset.role = 'bot';
+            botBubble.dataset.text = data.reply;
+            logs.appendChild(botBubble);
         } else {
-            botBubble.textContent = "Sorry, I encountered an error.";
+            const errBubble = document.createElement('div');
+            errBubble.className = 'msg-bubble msg-bot';
+            errBubble.innerHTML = `<span style="color:#dc3545;font-weight:bold;">Error: ${data.error ?? 'Unknown error'}</span>`;
+            logs.appendChild(errBubble);
         }
 
-        logsContainer.appendChild(botBubble);
-        logsContainer.scrollTop = logsContainer.scrollHeight;
+        logs.scrollTop = logs.scrollHeight;
+        saveChatHistory();
     })
-    .catch(error => {
-        const loader = document.getElementById('florabot-loading-indicator');
-        if(loader) loader.remove();
-
-        const errorBubble = document.createElement('div');
-        errorBubble.className = 'msg-bubble msg-bot';
-        errorBubble.innerHTML = '<span style="color:#dc3545; font-weight:bold;">Network connectivity failed.</span>';
-        logsContainer.appendChild(errorBubble);
-        logsContainer.scrollTop = logsContainer.scrollHeight;
-        console.error('Error:', error);
+    .catch(() => {
+        document.getElementById('florabot-loading-indicator')?.remove();
+        const errBubble = document.createElement('div');
+        errBubble.className = 'msg-bubble msg-bot';
+        errBubble.innerHTML = '<span style="color:#dc3545;font-weight:bold;">Network connectivity failed.</span>';
+        logs.appendChild(errBubble);
+        logs.scrollTop = logs.scrollHeight;
     });
 }
+
+document.addEventListener('DOMContentLoaded', restoreChatHistory);
 </script>

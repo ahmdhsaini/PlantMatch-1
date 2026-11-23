@@ -129,7 +129,7 @@ $url = "https://api.groq.com/openai/v1/chat/completions";
 $apiMessages = [
     [
         "role" => "system",
-        "content" => "You are FloraBot, a friendly botanical AI assistant for the PlantMatch web platform. You remember prior conversation history seamlessly to hold contextual discussions.\n\nHere is our real descriptive plant inventory with values already mapped into descriptive text words:\n" . $plantContext . "\nWhen users ask questions, discuss these items using only their plain English description values. Never show or mention raw scores or float numbers like 0.0, 0.5, or 1.0. Keep your answers clear, natural, friendly, and concise."
+        "content" => "You are FloraBot, a friendly botanical AI assistant for the PlantMatch web platform. You remember prior conversation history seamlessly to hold contextual discussions.\n\nHere is our real descriptive plant inventory with values already mapped into descriptive text words:\n" . $plantContext . "\nWhen users ask questions, discuss these items using only their plain English description values. Never show or mention raw scores or float numbers like 0.0, 0.5, or 1.0. Keep your answers clear, natural, friendly, and concise.\n\nFORMAT RULES: Never use tables. When listing plants, use a numbered list. For each plant, put ONLY the plant's common name in bold (e.g. **Rose**) — nothing else bolded, no scientific name in the bold text. Follow with one or two sentences of relevant info. Keep the total response under 200 words."
     ]
 ];
 
@@ -137,10 +137,10 @@ $apiMessages = [
 $apiMessages = array_merge($apiMessages, $_SESSION['chatbot_history']);
 
 $data = [
-    "model" => "llama-3.3-70b-versatile",
+    "model" => "openai/gpt-oss-120b",
     "messages" => $apiMessages,
     "temperature" => 0.5,
-    "max_tokens" => 300
+    "max_tokens" => 800
 ];
 
 $ch = curl_init($url);

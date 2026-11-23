@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 3. BRIDGE ENGINE: Package the data for Python execution
     $jsonArgs = escapeshellarg(json_encode($formData));
-    $pythonPath = "python3"; // Use "python" or full environment path depending on your server configuration
+    $pythonPath = "python"; // Use "python" or full environment path depending on your server configuration
     $command = "$pythonPath recommend.py " . escapeshellarg($userID) . " " . $jsonArgs . " 2>&1";
 
     // Run the Python script and catch the printed JSON array string
