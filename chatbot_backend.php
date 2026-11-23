@@ -96,26 +96,17 @@ try {
     // Explicitly grab text descriptive features columns
     $sql = "SELECT Scientific_Name, Common_Name, Gardening_Level, Space_Required, Light_Condition, Water_Frequency, Growth_Rate, Humidity_Need
             FROM plantmatch_ultimate_complete
-            LIMIT 30";
+            LIMIT 150";
 
     $stmt = $pdo->query($sql);
     $plants = $stmt->fetchAll();
 
-    // Construct text translation profile map
+    // Name-only format: minimise tokens while covering more plants
     $plantContext = "";
     foreach ($plants as $plant) {
-        $names = explode(',', $plant['Common_Name'] ?? 'Unnamed Plant');
+        $names = explode(',', $plant['Common_Name'] ?? '');
         $primary_common = trim($names[0]);
-
-        $lightStr    = translate_light_condition($plant['Light_Condition'] ?? 0.5);
-        $waterStr    = translate_water_frequency($plant['Water_Frequency'] ?? 0.5);
-        $skillStr    = translate_gardening_level($plant['Gardening_Level'] ?? 0.5);
-        $spaceStr    = translate_generic_scale($plant['Space_Required'] ?? 0.5, "Compact / Small Space", "Medium Space", "Large / Spacious Layout");
-        $growthStr   = translate_generic_scale($plant['Growth_Rate'] ?? 0.5, "Slow Growing", "Moderate Growth Rate", "Fast Growing");
-        $humidityStr = translate_generic_scale($plant['Humidity_Need'] ?? 0.5, "Low Humidity", "Moderate Ambient Moisture", "High Humidity Required");
-
-        $plantContext .= "- " . $primary_common . " (" . $plant['Scientific_Name'] . ") -> ";
-        $plantContext .= "Sunlight Setup: " . $lightStr . ", Water Schedule: " . $waterStr . ", Skill Requirement: " . $skillStr . ", Space Needs: " . $spaceStr . ", Growth Behavior: " . $growthStr . ", Humidity Needs: " . $humidityStr . ".\n";
+        $plantContext .= $primary_common . " (" . $plant['Scientific_Name'] . ")\n";
     }
 
 } catch (\PDOException $e) {
@@ -140,7 +131,7 @@ $data = [
     "model" => "openai/gpt-oss-120b",
     "messages" => $apiMessages,
     "temperature" => 0.5,
-    "max_tokens" => 800
+    "max_tokens" => 400
 ];
 
 $ch = curl_init($url);
