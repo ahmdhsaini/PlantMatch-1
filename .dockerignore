@@ -1,0 +1,9 @@
+# Keep secrets and local-only files out of the image
+config.php
+.env
+.git
+.gitignore
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+*.ipynb
