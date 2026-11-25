@@ -13,6 +13,9 @@ session_start();
 if (file_exists(__DIR__ . '/config.php')) {
     require_once __DIR__ . '/config.php';
 }
+if (!defined('GROK_API_KEY') && getenv('GROK_API_KEY') !== false) {
+    define('GROK_API_KEY', getenv('GROK_API_KEY'));
+}
 if (!defined('GROK_API_KEY') || GROK_API_KEY === '') {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Chatbot is not set up: add GROK_API_KEY to config.php']);
@@ -77,7 +80,7 @@ function translate_generic_scale($val, $lowText, $midText, $highText) {
 }
 
 // --- CONNECT TO LARAGON MYSQL DATABASE ---
-$host = '127.0.0.1';
+$host = getenv('DB_HOST') ?: '127.0.0.1';
 $db   = 'plantmatch_db';
 $user = 'root';
 $pass = '';
@@ -128,7 +131,7 @@ $apiMessages = [
 $apiMessages = array_merge($apiMessages, $_SESSION['chatbot_history']);
 
 $data = [
-    "model" => "openai/gpt-oss-120b",
+    "model" => "openai/gpt-oss-20b",
     "messages" => $apiMessages,
     "temperature" => 0.5,
     "max_tokens" => 400

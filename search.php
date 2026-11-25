@@ -2,7 +2,7 @@
 include('public_header.php'); 
 
 // 1. Database Connection Configuration
-$conn = mysqli_connect("localhost", "root", "", "plantmatch_db");
+$conn = mysqli_connect(getenv('DB_HOST') ?: "127.0.0.1", "root", "", "plantmatch_db");
 $table = "plantmatch_ultimate_complete";
 $limit = 12; 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;

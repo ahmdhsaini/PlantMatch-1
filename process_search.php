@@ -6,7 +6,7 @@
  */
 
 // 1. Database Configuration
-$host = "localhost";
+$host = getenv('DB_HOST') ?: "127.0.0.1";
 $user = "root";
 $pass = "";
 $db_name = "plantmatch_db";

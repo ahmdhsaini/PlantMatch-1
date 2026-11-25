@@ -1,5 +1,5 @@
 <?php
-$host = "127.0.0.1";
+$host = getenv('DB_HOST') ?: "127.0.0.1";
 $user = "root";
 $pass = ""; // Laragon default is empty
 $dbname = "plantmatch_db";

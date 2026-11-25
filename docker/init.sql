@@ -1,0 +1,3 @@
+-- Place your database export here.
+-- Export from Laragon: open phpMyAdmin → plantmatch_db → Export → SQL → Go
+-- Then replace this file content with the exported SQL.

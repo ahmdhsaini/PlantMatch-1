@@ -1,6 +1,7 @@
 # Secrets
 config.php
 .env
+!.env.example
 
 # Python
 __pycache__/

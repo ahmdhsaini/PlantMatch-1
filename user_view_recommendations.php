@@ -178,7 +178,7 @@ if ($pref_stmt) {
         }
 
         // Query all database data rows safely
-        $all_plants_sql = "SELECT * FROM plantmatch_ultimate_complete";
+        $all_plants_sql = "SELECT `ID`, `Scientific_Name`, `Common_Name`, `Gardening_Level`, `Space_Required`, `Light_Condition`, `Water_Frequency`, `Growth_Rate`, `Humidity_Need`, `Mature_Height_cm`, `Categories_Climbers & Vines`, `Categories_Edibles & Herbs`, `Categories_Ferns`, `Categories_Flowering Ornamentals`, `Categories_Foliage Plants`, `Categories_Palms`, `Categories_Shrubs`, `Categories_Succulents & Cacti`, `Categories_Trees`, `House_Type_High-rise (Apartment/Flat)`, `House_Type_Landed (Terrace/Semi-D/Bungalow)`, `House_Type_Tradisional/Spacious (Village House)` FROM plantmatch_ultimate_complete";
         $plants_res = mysqli_query($conn, $all_plants_sql);
 
         if ($plants_res) {
@@ -242,7 +242,7 @@ if ($pref_stmt) {
 
 // Emergency random distribution if settings are empty
 if (empty($recommended_plants_list)) {
-    $fallback_sql = "SELECT * FROM plantmatch_ultimate_complete ORDER BY RAND() LIMIT 10";
+    $fallback_sql = "SELECT `ID`, `Scientific_Name`, `Common_Name`, `Gardening_Level`, `Space_Required`, `Light_Condition`, `Water_Frequency`, `Growth_Rate`, `Humidity_Need`, `Mature_Height_cm`, `Categories_Climbers & Vines`, `Categories_Edibles & Herbs`, `Categories_Ferns`, `Categories_Flowering Ornamentals`, `Categories_Foliage Plants`, `Categories_Palms`, `Categories_Shrubs`, `Categories_Succulents & Cacti`, `Categories_Trees`, `House_Type_High-rise (Apartment/Flat)`, `House_Type_Landed (Terrace/Semi-D/Bungalow)`, `House_Type_Tradisional/Spacious (Village House)` FROM plantmatch_ultimate_complete ORDER BY RAND() LIMIT 10";
     $fallback_res = mysqli_query($conn, $fallback_sql);
     if ($fallback_res) {
         while ($row = mysqli_fetch_assoc($fallback_res)) {
